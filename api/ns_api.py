@@ -8,10 +8,12 @@
 
     Rate limit should be 5,000 requests per hour per OAuth token
 """
+import itertools
 
 import requests
 import json
 import datetime
+from collections import Counter
 
 class NSApi:
     API_PATH = "https://gateway.apiportal.ns.nl/public-reisinformatie/api/v2/"
@@ -80,6 +82,79 @@ class NSApi:
             disruptions.append(disruption_data)
 
         return disruptions
+
+    def get_disruptionstotal(self):
+        disruptions = []
+        request = requests.get(self.API_PATH + "disruptions", headers=self.get_request_headers())
+
+        if request.status_code != 200:
+            print("Error with NS API:")
+            print(request.content)
+            return None
+
+        data_json = json.loads(request.content)
+
+        for json_disruptions in data_json['payload']:
+            disruption_data = {
+                'title': json_disruptions['titel'],
+                'impact': json_disruptions['verstoring']['impact'] if 'impact' in json_disruptions['verstoring'] else None,
+                'society': json_disruptions['verstoring']['maatschappij'] if 'impact' in json_disruptions['verstoring'] else None,
+                'stations': []
+            }
+
+            if 'trajecten' in json_disruptions['verstoring']:
+                for routes in json_disruptions['verstoring']['trajecten']:
+                    for route_station in routes['stations']:
+                        if route_station not in disruption_data:
+                            disruption_data['stations'].append(route_station)
+
+            disruptions.append(disruption_data)
+
+        disruptedtrains = []
+        for i in disruptions:
+            stations = i['stations']
+            for y in stations:
+                disruptedtrains.append(y)
+        disruptedtrains = list(dict.fromkeys(disruptedtrains))
+        print(len(disruptedtrains))
+        totaldisruption = len(disruptedtrains)
+
+        return totaldisruption
+
+    def get_disruptiontop3(self):
+        disruptions = []
+        request = requests.get(self.API_PATH + "disruptions", headers=self.get_request_headers())
+
+        if request.status_code != 200:
+            print("Error with NS API:")
+            print(request.content)
+            return None
+
+        data_json = json.loads(request.content)
+
+        for json_disruptions in data_json['payload']:
+            disruption_data = {
+                'title': json_disruptions['titel'],
+                'impact': json_disruptions['verstoring']['impact'] if 'impact' in json_disruptions['verstoring'] else None,
+                'society': json_disruptions['verstoring']['maatschappij'] if 'impact' in json_disruptions['verstoring'] else None,
+                'stations': []
+            }
+
+            if 'trajecten' in json_disruptions['verstoring']:
+                for routes in json_disruptions['verstoring']['trajecten']:
+                    for route_station in routes['stations']:
+                        if route_station not in disruption_data:
+                            disruption_data['stations'].append(route_station)
+
+            disruptions.append(disruption_data)
+
+        disruptedtrains = []
+        for i in disruptions:
+            stations = i['stations']
+            for y in stations:
+                disruptedtrains.append(y)
+        c = Counter(disruptedtrains)
+        return c.most_common(3)
 
     def get_departures(self, station_id):
         departures = []

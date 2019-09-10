@@ -20,8 +20,12 @@ def main():
     print("NS API Test")
     ns_api = NSApi()
 
-    # Get a list of train stations
-    #print(ns_api.get_train_stations())
+    totaltrainstation = len(ns_api.get_train_stations())
+    totaldisruptions = ns_api.get_disruptionstotal()
+    disrperc = (round(totaldisruptions / totaltrainstation * 100))
+    print("the percentage of disruptions is currently", disrperc, "%")
+    print(ns_api.get_disruptiontop3())
+
 
     # Get a list of disruptions
     #print(ns_api.get_disruptions())
